@@ -1,5 +1,6 @@
 import win32gui as w32
 from math import log2, sqrt
+from time import sleep
 
 
 def window_enumeration_handler(hwnd, window_list):
@@ -111,29 +112,33 @@ def tile_windows(monitor_parameters):
         # Place focused window to tile if it is inside one -----
         # Get Rectangle of focused window
         window = w32.GetForegroundWindow()
-        win_rect = w32.GetWindowRect(window)
+        if window in windows:
+            win_rect = w32.GetWindowRect(window)
 
-        # Position is middle of windows title bar
-        win_pos = (win_rect[2] + win_rect[0])/2, win_rect[1]
+            # Position is middle of windows title bar
+            win_pos = (win_rect[2] + win_rect[0])/2, win_rect[1]
 
-        for tile in grid:
-            # Examine if windows is inside a tile
-            if tile[0] <= win_pos[0] <= tile[2] and tile[1] <= win_pos[1] <= tile[3]:
-                # Place it to this tile
-                w32.MoveWindow(window, tile[0], tile[1],
-                               tile[2] - tile[0], tile[3] - tile[1], True)
+            for tile in grid:
+                # Examine if windows is inside a tile
+                if tile[0] <= win_pos[0] <= tile[2] and tile[1] <= win_pos[1] <= tile[3]:
+                    # Place it to this tile
+                    w32.MoveWindow(window, tile[0], tile[1],
+                                   tile[2] - tile[0], tile[3] - tile[1], True)
 
-                # Remove tiled window from window list
-                windows.remove(window)
+                    # Remove tiled window from window list
+                    try:
+                        windows.remove(window)
+                    except ValueError:
+                        pass
 
-                # Remove tile from tile list
-                grid.remove(tile)
+                    # Remove tile from tile list
+                    grid.remove(tile)
 
-                # Exit loop
-                break
+                    # Exit loop
+                    break
 
         # ------------------------------------------------------
-        print(grid)
+
         # Place windows in grid --------------------------------
         for tile in grid:
             # Calculate tile center
@@ -169,4 +174,6 @@ if __name__ == "__main__":
     SCREEN_PARAMETERS = ((-1280, 54, 0, 1038), (0, 0, 1920, 1040))
 
     # Arrange all visible windows to tiles
-    tile_windows(SCREEN_PARAMETERS)
+    while True:
+        tile_windows(SCREEN_PARAMETERS)
+        sleep(0.1)
