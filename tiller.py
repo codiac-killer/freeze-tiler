@@ -11,7 +11,8 @@ def window_enumeration_handler(hwnd, window_list):
     # Filter system windows by name TODO: find out about those pesky apps | wont be tiled for now
     title = w32.GetWindowText(hwnd)
     title_flag = title != "" and title != "Program Manager" and title != "Calculator" and title != "Settings" and \
-        title != "Microsoft Store" and title != "Movies & TV"
+        title != "Microsoft Store" and title != "Movies & TV" and title != "Microsoft Text Input Application" and \
+        title != "Task Manager"
 
     # Added window to list if conditions met
     if (not w32.IsIconic(hwnd)) and w32.IsWindowVisible(hwnd) and win_size and title_flag:
@@ -86,9 +87,11 @@ def tile_windows(monitor_parameters):
 
                 # replace with two new tiles
                 grid.insert(len(grid) - tile_index + 1,
-                            (old_tile[0], old_tile[1], old_tile[2], int((old_tile[1] + old_tile[3]) / 2 - WINDOW_GAP / 2)))
+                            (old_tile[0], old_tile[1],
+                             old_tile[2], int((old_tile[1] + old_tile[3]) / 2 - WINDOW_GAP / 2)))
                 grid.insert(len(grid) - tile_index + 1,
-                            (old_tile[0], int((old_tile[1] + old_tile[3]) / 2 + WINDOW_GAP / 2), old_tile[2], old_tile[3]))
+                            (old_tile[0], int((old_tile[1] + old_tile[3]) / 2 + WINDOW_GAP / 2),
+                             old_tile[2], old_tile[3]))
 
             # Check if log2(tile) is integer
             if log2(tile + 1).is_integer():
@@ -112,8 +115,8 @@ def tile_windows(monitor_parameters):
 
 if __name__ == "__main__":
     # Define parameters
-    WINDOW_GAP = 30
-    SCREEN_GAP = 50
+    WINDOW_GAP = 10
+    SCREEN_GAP = 15
     SCREEN_PARAMETERS = ((-1280, 54, 0, 1038), (0, 0, 1920, 1040))
 
     # Arrange all visible windows to tiles
