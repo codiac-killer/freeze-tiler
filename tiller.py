@@ -1,6 +1,21 @@
 import win32gui as w32
 from math import log2, sqrt
 from time import sleep
+from screeninfo import get_monitors
+
+
+def get_screen_dimensions():
+    list_of_monitors = []
+    for monitor_specs in get_monitors():
+        monitor_specs = str(monitor_specs).replace("=", ",").replace("(", ",").replace(")", ",")
+        monitor_specs = monitor_specs.split(",")
+        monitor_specs = (int(monitor_specs[2]),
+                         int(monitor_specs[4]),
+                         int(monitor_specs[2]) + int(monitor_specs[6]),
+                         int(monitor_specs[4]) + int(monitor_specs[8]) - 40)  # -40 because of space occupied by taskbar
+        list_of_monitors.append(monitor_specs)
+
+    return sorted(list_of_monitors, key=lambda a_entry: a_entry[0])
 
 
 def window_enumeration_handler(hwnd, window_list):
@@ -16,7 +31,7 @@ def window_enumeration_handler(hwnd, window_list):
         title != "Task Manager"
 
     # Added window to list if conditions met
-    if (not w32.IsIconic(hwnd)) and w32.IsWindowVisible(hwnd) and win_size and title_flag:
+    if (not w32.IsIconic(hwnd)) and w32.IsWindowVisible(hwnd) and w32.IsWindow(hwnd) and win_size and title_flag:
         window_list.append(hwnd)
 
 
@@ -34,7 +49,7 @@ def get_non_minimized_windows(monitor_parameters):
         window_rect = w32.GetWindowRect(win)
         for i in range(len(monitor_parameters)):
             # IF window is lefter than the left screen
-            if i == 0 and window_rect[0] < monitor_parameters[0][0]:
+            if i == 0 and window_rect[0] < monitor_parameters[i][0]:
                 windows_p_screen[i].append(win)
             # IF window starts somewhere in the screen
             elif (monitor_parameters[i][0] - 8) <= window_rect[0] < monitor_parameters[i][2]:
@@ -126,10 +141,10 @@ def tile_windows(monitor_parameters):
                                    tile[2] - tile[0], tile[3] - tile[1], True)
 
                     # Remove tiled window from window list
-                    try:
-                        windows.remove(window)
-                    except ValueError:
-                        pass
+                    # try:
+                    windows.remove(window)
+                    # except ValueError:
+                    #     pass
 
                     # Remove tile from tile list
                     grid.remove(tile)
@@ -171,7 +186,8 @@ if __name__ == "__main__":
     # Define parameters
     WINDOW_GAP = 10
     SCREEN_GAP = 15
-    SCREEN_PARAMETERS = ((-1280, 54, 0, 1038), (0, 0, 1920, 1040))
+    SCREEN_PARAMETERS = get_screen_dimensions()
+    # SCREEN_PARAMETERS = ((-1280, 54, 0, 1038), (0, 0, 1920, 1040))
 
     # Arrange all visible windows to tiles
     while True:
