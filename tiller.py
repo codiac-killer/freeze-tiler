@@ -1,5 +1,5 @@
 import win32gui as w32
-from math import log2
+from math import log2, sqrt
 
 
 def window_enumeration_handler(hwnd, window_list):
@@ -51,6 +51,11 @@ def tile_windows(monitor_parameters):
     visible_windows = get_non_minimized_windows(monitor_parameters)
 
     for windows, this_screen in zip(visible_windows, monitor_parameters):
+        # Check if desktop is empty ----------------------------
+        if not windows:
+            continue
+        # ------------------------------------------------------
+
         # Calculate Grid ---------------------------------------
         # Get screen dimensions
         screen_wid = this_screen[2] - this_screen[0]
@@ -103,13 +108,57 @@ def tile_windows(monitor_parameters):
                 tile_index += 2
         # ------------------------------------------------------
 
+        # Place focused window to tile if it is inside one -----
+        # Get Rectangle of focused window
+        window = w32.GetForegroundWindow()
+        win_rect = w32.GetWindowRect(window)
+
+        # Position is middle of windows title bar
+        win_pos = (win_rect[2] + win_rect[0])/2, win_rect[1]
+
+        for tile in grid:
+            # Examine if windows is inside a tile
+            if tile[0] <= win_pos[0] <= tile[2] and tile[1] <= win_pos[1] <= tile[3]:
+                # Place it to this tile
+                w32.MoveWindow(window, tile[0], tile[1],
+                               tile[2] - tile[0], tile[3] - tile[1], True)
+
+                # Remove tiled window from window list
+                windows.remove(window)
+
+                # Remove tile from tile list
+                grid.remove(tile)
+
+                # Exit loop
+                break
+
+        # ------------------------------------------------------
+        print(grid)
         # Place windows in grid --------------------------------
-        for window in windows:
-            # Get first tile of list
-            new_rect = grid.pop(0)
+        for tile in grid:
+            # Calculate tile center
+            tile_center = (tile[2] + tile[0])/2, (tile[3] + tile[1])/2
+
+            list_of_distances = []
+            # Find windows' distances to tile center
+            # Distance calculated from middle of windows title bar
+            for win in windows:
+                win_rect = w32.GetWindowRect(win)
+                x_diff = tile_center[0] - (win_rect[2] + win_rect[0])/2
+                y_diff = tile_center[1] - win_rect[1]
+                distance = sqrt(x_diff**2 + y_diff**2)
+                list_of_distances.append([win, distance])
+
+            # Find closest window to tile center
+            window = sorted(list_of_distances, key=lambda a_entry: a_entry[1])[0]
+
             # Move window to correct tile
-            w32.MoveWindow(window, new_rect[0], new_rect[1],
-                           new_rect[2] - new_rect[0], new_rect[3] - new_rect[1], True)
+            w32.MoveWindow(window[0], tile[0], tile[1],
+                           tile[2] - tile[0], tile[3] - tile[1], True)
+
+            # Remove tiled window from window list
+            windows.remove(window[0])
+
         # ------------------------------------------------------
 
 
