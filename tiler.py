@@ -1,4 +1,6 @@
-import win32gui as w32
+import win32gui as w32gui
+import win32api as w32api
+from win32con import GWL_STYLE, GWL_EXSTYLE
 from math import log2, sqrt
 from time import sleep
 from screeninfo import get_monitors
@@ -20,25 +22,31 @@ def get_screen_dimensions():
 
 def window_enumeration_handler(hwnd, window_list):
     # Get Window's rectangle
-    window_rect = w32.GetWindowRect(hwnd)
+    window_rect = w32gui.GetWindowRect(hwnd)
     # Calculate window size
     win_size = (window_rect[2] - window_rect[0]) * (window_rect[3] - window_rect[1])
 
     # Filter system windows by name TODO: find out about those pesky apps | wont be tiled for now
-    title = w32.GetWindowText(hwnd)
+    title = w32gui.GetWindowText(hwnd)
     title_flag = title != "" and title != "Program Manager" and title != "Calculator" and title != "Settings" and \
         title != "Microsoft Store" and title != "Movies & TV" and title != "Microsoft Text Input Application" and \
         title != "Task Manager"
 
+    # TODO exclude windows with WS_EX_TOOLWINDOW flag
+    # TODO look into WS_EX_CONTROLPARENT flag for dialog boxes
     # Added window to list if conditions met
-    if (not w32.IsIconic(hwnd)) and w32.IsWindowVisible(hwnd) and w32.IsWindow(hwnd) and win_size and title_flag:
+    if (not w32gui.IsIconic(hwnd)) and w32gui.IsWindowVisible(hwnd) and w32gui.IsWindow(hwnd) and win_size and\
+            title_flag:
         window_list.append(hwnd)
+        print(w32gui.GetWindowText(hwnd))
+        print(hex(w32api.GetWindowLong(hwnd, GWL_STYLE)))
+        print(hex(w32api.GetWindowLong(hwnd, GWL_EXSTYLE)))
 
 
 def get_non_minimized_windows(monitor_parameters):
     # Get Non Minimized windows
     top_windows = []
-    w32.EnumWindows(window_enumeration_handler, top_windows)
+    w32gui.EnumWindows(window_enumeration_handler, top_windows)
 
     # Determine regions of screens
     windows_p_screen = [[] for _ in monitor_parameters]
@@ -46,7 +54,7 @@ def get_non_minimized_windows(monitor_parameters):
     # Divide window list by screen
     for win in top_windows:
         # Get Window's rectangle
-        window_rect = w32.GetWindowRect(win)
+        window_rect = w32gui.GetWindowRect(win)
         for i in range(len(monitor_parameters)):
             # IF window is lefter than the left screen
             if i == 0 and window_rect[0] < monitor_parameters[i][0]:
@@ -126,9 +134,9 @@ def tile_windows(monitor_parameters):
 
         # Place focused window to tile if it is inside one -----
         # Get Rectangle of focused window
-        window = w32.GetForegroundWindow()
+        window = w32gui.GetForegroundWindow()
         if window in windows:
-            win_rect = w32.GetWindowRect(window)
+            win_rect = w32gui.GetWindowRect(window)
 
             # Position is middle of windows title bar
             win_pos = (win_rect[2] + win_rect[0])/2, win_rect[1]
@@ -137,8 +145,8 @@ def tile_windows(monitor_parameters):
                 # Examine if windows is inside a tile
                 if tile[0] <= win_pos[0] <= tile[2] and tile[1] <= win_pos[1] <= tile[3]:
                     # Place it to this tile
-                    w32.MoveWindow(window, tile[0], tile[1],
-                                   tile[2] - tile[0], tile[3] - tile[1], True)
+                    w32gui.MoveWindow(window, tile[0], tile[1],
+                                      tile[2] - tile[0], tile[3] - tile[1], True)
 
                     # Remove tiled window from window list
                     # try:
@@ -163,7 +171,7 @@ def tile_windows(monitor_parameters):
             # Find windows' distances to tile center
             # Distance calculated from middle of windows title bar
             for win in windows:
-                win_rect = w32.GetWindowRect(win)
+                win_rect = w32gui.GetWindowRect(win)
                 x_diff = tile_center[0] - (win_rect[2] + win_rect[0])/2
                 y_diff = tile_center[1] - win_rect[1]
                 distance = sqrt(x_diff**2 + y_diff**2)
@@ -173,8 +181,8 @@ def tile_windows(monitor_parameters):
             window = sorted(list_of_distances, key=lambda a_entry: a_entry[1])[0]
 
             # Move window to correct tile
-            w32.MoveWindow(window[0], tile[0], tile[1],
-                           tile[2] - tile[0], tile[3] - tile[1], True)
+            w32gui.MoveWindow(window[0], tile[0], tile[1],
+                              tile[2] - tile[0], tile[3] - tile[1], True)
 
             # Remove tiled window from window list
             windows.remove(window[0])
@@ -191,5 +199,6 @@ if __name__ == "__main__":
 
     # Arrange all visible windows to tiles
     while True:
+        print("\n###################\n")
         tile_windows(SCREEN_PARAMETERS)
-        sleep(0.1)
+        sleep(10)
