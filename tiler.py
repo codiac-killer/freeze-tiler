@@ -1,6 +1,6 @@
 import win32gui as w32gui
 import win32api as w32api
-from win32con import GWL_STYLE, GWL_EXSTYLE
+from win32con import GWL_STYLE, GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_CONTROLPARENT, WS_MAXIMIZE
 from math import log2, sqrt
 from time import sleep
 from screeninfo import get_monitors
@@ -14,7 +14,7 @@ def get_screen_dimensions():
         monitor_specs = (int(monitor_specs[2]),
                          int(monitor_specs[4]),
                          int(monitor_specs[2]) + int(monitor_specs[6]),
-                         int(monitor_specs[4]) + int(monitor_specs[8]) - 40)  # -40 because of space occupied by taskbar
+                         int(monitor_specs[4]) + int(monitor_specs[8]) - 40)  # -40 because of task bar
         list_of_monitors.append(monitor_specs)
 
     return sorted(list_of_monitors, key=lambda a_entry: a_entry[0])
@@ -26,21 +26,30 @@ def window_enumeration_handler(hwnd, window_list):
     # Calculate window size
     win_size = (window_rect[2] - window_rect[0]) * (window_rect[3] - window_rect[1])
 
-    # Filter system windows by name TODO: find out about those pesky apps | wont be tiled for now
+    # Filter system windows by name
+    # TODO: find out about those pesky apps | wont be tiled for now <- check suspended windows
+    #  (https://stackoverflow.com/questions/1006691/check-if-a-win32-thread-is-running-or-in-a-suspended-state)
     title = w32gui.GetWindowText(hwnd)
     title_flag = title != "" and title != "Program Manager" and title != "Calculator" and title != "Settings" and \
         title != "Microsoft Store" and title != "Movies & TV" and title != "Microsoft Text Input Application" and \
         title != "Task Manager"
+    style = w32api.GetWindowLong(hwnd, GWL_STYLE)
+    extended_style = w32api.GetWindowLong(hwnd, GWL_EXSTYLE)
 
-    # TODO exclude windows with WS_EX_TOOLWINDOW flag
-    # TODO look into WS_EX_CONTROLPARENT flag for dialog boxes
+    # TODO make sure second filter doesn't cause problem (need for some popups)
+    is_not_toolbar = (extended_style & WS_EX_TOOLWINDOW == 0) and (style & WS_EX_TOOLWINDOW == 0)
+    is_not_controlling_parent = (extended_style & WS_EX_CONTROLPARENT == 0)
+    is_not_maximised = style & WS_MAXIMIZE == 0
+
     # Added window to list if conditions met
-    if (not w32gui.IsIconic(hwnd)) and w32gui.IsWindowVisible(hwnd) and w32gui.IsWindow(hwnd) and win_size and\
-            title_flag:
+    if (not w32gui.IsIconic(hwnd)) and w32gui.IsWindowVisible(hwnd) and\
+            w32gui.IsWindow(hwnd) and win_size and\
+            title_flag and is_not_toolbar and\
+            is_not_controlling_parent and is_not_maximised:
         window_list.append(hwnd)
         print(w32gui.GetWindowText(hwnd))
-        print(hex(w32api.GetWindowLong(hwnd, GWL_STYLE)))
-        print(hex(w32api.GetWindowLong(hwnd, GWL_EXSTYLE)))
+        print(hex(style))
+        print(hex(extended_style))
 
 
 def get_non_minimized_windows(monitor_parameters):
@@ -201,4 +210,4 @@ if __name__ == "__main__":
     while True:
         print("\n###################\n")
         tile_windows(SCREEN_PARAMETERS)
-        sleep(10)
+        sleep(0.10)

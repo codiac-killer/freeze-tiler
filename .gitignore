@@ -5,3 +5,4 @@ __pycache__/
 output/
 mintty.exe.stackdump
 test.ico
+tests/
