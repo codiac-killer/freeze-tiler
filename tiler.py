@@ -47,9 +47,6 @@ def window_enumeration_handler(hwnd, window_list):
             title_flag and is_not_toolbar and\
             is_not_controlling_parent and is_not_maximised:
         window_list.append(hwnd)
-        print(w32gui.GetWindowText(hwnd))
-        print(hex(style))
-        print(hex(extended_style))
 
 
 def get_non_minimized_windows(monitor_parameters):
@@ -208,6 +205,5 @@ if __name__ == "__main__":
 
     # Arrange all visible windows to tiles
     while True:
-        print("\n###################\n")
         tile_windows(SCREEN_PARAMETERS)
         sleep(0.10)
