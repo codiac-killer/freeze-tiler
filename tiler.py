@@ -61,8 +61,9 @@ def window_enumeration_handler(hwnd, window_list):
 def get_non_minimized_windows(monitor_parameters):
     # Get Non Minimized windows
     top_windows = []
-    w32gui.EnumWindows(window_enumeration_handler, top_windows)
 
+    w32gui.EnumWindows(window_enumeration_handler, top_windows)
+   
     # Determine regions of screens
     windows_p_screen = [[] for _ in monitor_parameters]
 
@@ -70,6 +71,7 @@ def get_non_minimized_windows(monitor_parameters):
     for win in top_windows:
         # Get Window's rectangle
         window_rect = w32gui.GetWindowRect(win)
+
         for i in range(len(monitor_parameters)):
             # IF window is lefter than the left screen
             if i == 0 and window_rect[0] < monitor_parameters[i][0]:
