@@ -6,3 +6,4 @@ output/
 mintty.exe.stackdump
 test.ico
 tests/
+freeze_tiler.exe

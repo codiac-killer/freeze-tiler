@@ -1,6 +1,7 @@
 import win32gui as w32gui
 import win32api as w32api
-from win32con import GWL_STYLE, GWL_EXSTYLE, WS_EX_TOOLWINDOW, WS_EX_CONTROLPARENT, WS_MAXIMIZE
+import win32process as w32proc
+from win32con import GWL_STYLE, GWL_EXSTYLE, WS_POPUP, WS_EX_TOOLWINDOW, WS_EX_CONTROLPARENT, WS_MAXIMIZE, PROCESS_ALL_ACCESS
 from math import log2, sqrt
 from time import sleep
 from screeninfo import get_monitors
@@ -27,25 +28,33 @@ def window_enumeration_handler(hwnd, window_list):
     win_size = (window_rect[2] - window_rect[0]) * (window_rect[3] - window_rect[1])
 
     # Filter system windows by name
-    # TODO: find out about those pesky apps | wont be tiled for now <- check suspended windows
-    #  (https://stackoverflow.com/questions/1006691/check-if-a-win32-thread-is-running-or-in-a-suspended-state)
     title = w32gui.GetWindowText(hwnd)
     title_flag = title != "" and title != "Program Manager" and title != "Calculator" and title != "Settings" and \
         title != "Microsoft Store" and title != "Movies & TV" and title != "Microsoft Text Input Application" and \
-        title != "Task Manager"
+        title != "Task Manager" and title != "Photos" and title != "Cortana" and title != "Microsoft Edge"
+
+    # Filter by style
     style = w32api.GetWindowLong(hwnd, GWL_STYLE)
     extended_style = w32api.GetWindowLong(hwnd, GWL_EXSTYLE)
-
     # TODO make sure second filter doesn't cause problem (need for some popups)
     is_not_toolbar = (extended_style & WS_EX_TOOLWINDOW == 0) and (style & WS_EX_TOOLWINDOW == 0)
+    is_not_popup = style & WS_POPUP == 0
     is_not_controlling_parent = (extended_style & WS_EX_CONTROLPARENT == 0)
     is_not_maximised = style & WS_MAXIMIZE == 0
+
+    try:
+        pid = w32proc.GetWindowThreadProcessId(hwnd)
+        t_handle = w32proc.OpenThread()
+        print(w32proc.ResumeThread(pid[0]))
+    except:
+        pass
 
     # Added window to list if conditions met
     if (not w32gui.IsIconic(hwnd)) and w32gui.IsWindowVisible(hwnd) and\
             w32gui.IsWindow(hwnd) and win_size and\
             title_flag and is_not_toolbar and\
-            is_not_controlling_parent and is_not_maximised:
+            is_not_controlling_parent and is_not_maximised and\
+            is_not_popup:
         window_list.append(hwnd)
 
 
@@ -206,4 +215,5 @@ if __name__ == "__main__":
     # Arrange all visible windows to tiles
     while True:
         tile_windows(SCREEN_PARAMETERS)
-        sleep(0.10)
+        sleep(10)
+        print("\n#######################################################################\n")
