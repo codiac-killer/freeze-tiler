@@ -1,9 +1,0 @@
-test_winauto.py
-test_screen_res.py
-.idea/
-__pycache__/
-output/
-mintty.exe.stackdump
-test.ico
-tests/
-freeze_tiler.exe
